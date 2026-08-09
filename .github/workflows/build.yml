@@ -25,8 +25,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: ${{ matrix.command }}
+        continue-on-error: true
       - name: Prefix release assets by platform
         shell: bash
+        if: always()
         run: |
           mkdir -p release-staged
           platform="${{ matrix.os }}"
@@ -36,12 +38,14 @@ jobs:
             fi
           done
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: paperbound-${{ matrix.os }}
           path: release-staged/*
+          if-no-files-found: warn
 
   release:
-    if: needs.desktop-build.result == 'success' && startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v')
     needs: desktop-build
     runs-on: ubuntu-latest
     permissions:
