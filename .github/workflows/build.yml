@@ -2,9 +2,12 @@ name: Build Paperbound
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    tags: ['v*.*.*']
   pull_request:
+
+concurrency:
+  group: paperbound-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   desktop-build:
@@ -25,7 +28,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: ${{ matrix.command }}
-        continue-on-error: true
       - name: Prefix release assets by platform
         shell: bash
         if: always()
@@ -45,7 +47,7 @@ jobs:
           if-no-files-found: warn
 
   release:
-    if: always() && startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && needs.desktop-build.result == 'success'
     needs: desktop-build
     runs-on: ubuntu-latest
     permissions:
