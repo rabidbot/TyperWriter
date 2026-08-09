@@ -25,13 +25,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: ${{ matrix.command }}
+      - name: Prefix release assets by platform
+        shell: bash
+        run: |
+          mkdir -p release-staged
+          platform="${{ matrix.os }}"
+          for file in release/*; do
+            if [ -f "$file" ]; then
+              cp "$file" "release-staged/${platform}-${file##*/}"
+            fi
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: paperbound-${{ matrix.os }}
-          path: release/*
+          path: release-staged/*
 
   release:
-    if: always() && startsWith(github.ref, 'refs/tags/v')
+    if: needs.desktop-build.result == 'success' && startsWith(github.ref, 'refs/tags/v')
     needs: desktop-build
     runs-on: ubuntu-latest
     permissions:
