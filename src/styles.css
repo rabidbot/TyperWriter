@@ -18,3 +18,8 @@ button { border: 0; cursor: pointer; }
 .is-focused .topbar { opacity:.35; transition:opacity .4s; }.topbar:hover,.statusbar:hover { opacity:1; }.app[data-theme='night']{}
 html[data-theme='night'] .app { background:#272a28;color:#c8c5bb; } html[data-theme='night'] .topbar,html[data-theme='night'] .statusbar { color:#92968d; } html[data-theme='night'] .paper { background-color:#ddd8ca; }.app.is-focused .paper { animation: settle .4s ease-out; } @keyframes settle { from { transform:translateY(4px); } to { transform:translateY(0); } }
 @media (max-width:700px) { .rail { width:54px; }.topbar { height:64px;padding:0 17px; }.top-actions { gap:7px; }.save-state { display:none; }.canvas-shell { padding:0 10px 15px; }.paper-wrap { height:calc(100vh - 145px);min-height:420px; }.paper { padding:36px 27px 28px; }.title-input { margin-top:53px;font-size:22px;margin-bottom:23px; }.editor { font-size:13px;line-height:1.95; }.statusbar { padding:0 17px 17px; }.status-right button:not(.help) { font-size:0; }.status-right button svg { margin:0; }.status-left span:nth-of-type(2),.status-left .status-divider:nth-of-type(2) { display:none; }.focus-hint { display:none; }.settings-popover { right:15px;bottom:58px; } }
+
+/* The caret line is padded into the middle of the paper and the document scrolls underneath it. */
+.editor { padding-block: var(--typewriter-padding, 0px); scroll-behavior: smooth; }
+.volume-control { display:grid!important; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+.volume-control input[type=range] { grid-column:1/-1; width:100%; accent-color:#be7754; }

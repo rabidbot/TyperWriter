@@ -9,6 +9,10 @@ npm install
 npm run dev
 ```
 
+## Publish a desktop release
+
+Run `npm run release` from a clean `main` checkout. This increments the patch version, creates a matching `v*.*.*` tag, and pushes both the commit and tag. GitHub Actions then builds the Windows installer/portable executable and macOS DMG/ZIP and publishes them to GitHub Releases.
+
 ## Included
 
 - Vertical active-line centering while writing

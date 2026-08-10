@@ -9,6 +9,14 @@ import './styles.css'
 
 const starter = `The morning arrives quietly.\n\nA thin gold light gathers at the edge of the curtains, and somewhere beyond the window a bird begins its first small song.\n\nThere is a particular calm in an unwritten page. It asks for nothing but attention. One word, then another. The soft, familiar rhythm of the keys.`
 
+// Mixkit royalty-free samples keep repeated keystrokes organic without a large bundled sound bank.
+const SAMPLES = {
+  key: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
+  space: 'https://assets.mixkit.co/active_storage/sfx/2583/2583-preview.mp3',
+  backspace: 'https://assets.mixkit.co/active_storage/sfx/2584/2584-preview.mp3',
+  enter: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
+}
+
 function wordCount(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0
 }
@@ -36,11 +44,12 @@ function App() {
   const [saved, setSaved] = useState(true)
   const [focus, setFocus] = useState(false)
   const [dark, setDark] = useState(false)
-  const [sound, setSound] = useState(true)
+  const [sound, setSound] = useState(() => localStorage.getItem('paperbound-sound') !== 'off')
+  const [volume, setVolume] = useState(() => Number(localStorage.getItem('paperbound-volume') || 0.55))
   const [showSettings, setShowSettings] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const editorRef = useRef(null)
-  const audioRef = useRef(null)
+  const audioRef = useRef([])
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'night' : 'day'
@@ -55,36 +64,54 @@ function App() {
     return () => clearTimeout(timeout)
   }, [text, title])
 
-  function playKey() {
+  useEffect(() => {
+    localStorage.setItem('paperbound-sound', sound ? 'on' : 'off')
+    localStorage.setItem('paperbound-volume', String(volume))
+  }, [sound, volume])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return undefined
+    const syncViewport = () => centerActiveLine(editor, 'auto')
+    const observer = new ResizeObserver(syncViewport)
+    observer.observe(editor)
+    syncViewport()
+    return () => observer.disconnect()
+  }, [])
+
+  function playSample(type) {
     if (!sound) return
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext
-      if (!audioRef.current) audioRef.current = new AudioContext()
-      const ctx = audioRef.current
-      const oscillator = ctx.createOscillator()
-      const gain = ctx.createGain()
-      oscillator.type = 'square'
-      oscillator.frequency.value = 105 + Math.random() * 30
-      gain.gain.setValueAtTime(0.018, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.045)
-      oscillator.connect(gain).connect(ctx.destination)
-      oscillator.start(); oscillator.stop(ctx.currentTime + 0.05)
-    } catch { /* Audio is an enhancement; editing must always work. */ }
+    const audio = new Audio(SAMPLES[type])
+    audio.volume = Math.min(1, volume * (0.82 + Math.random() * 0.18))
+    audio.playbackRate = 0.96 + Math.random() * 0.08
+    audio.addEventListener('error', () => console.warn(`Could not load ${type} typewriter sample`), { once: true })
+    audio.play().catch(() => {})
+    audioRef.current.push(audio)
+    audio.addEventListener('ended', () => {
+      audioRef.current = audioRef.current.filter(item => item !== audio)
+    }, { once: true })
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'Backspace') playSample('backspace')
+    else if (event.key === 'Enter') playSample('enter')
+    else if (event.key === ' ') playSample('space')
+    else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) playSample('key')
   }
 
   function onChange(event) {
     setText(event.target.value)
     setSaved(false)
-    playKey()
     centerActiveLine(event.target)
   }
 
-  function centerActiveLine(target = editorRef.current) {
+  function centerActiveLine(target = editorRef.current, behavior = 'smooth') {
     if (!target) return
     const lineNumber = target.value.slice(0, target.selectionStart).split('\n').length - 1
     const lineHeight = parseFloat(window.getComputedStyle(target).lineHeight) || 32
-    const desired = lineNumber * lineHeight - (target.clientHeight / 2) + lineHeight
-    target.scrollTo({ top: Math.max(0, desired), behavior: 'smooth' })
+    const centerPadding = Math.max(0, target.clientHeight / 2 - lineHeight / 2)
+    target.style.setProperty('--typewriter-padding', `${centerPadding}px`)
+    target.scrollTo({ top: Math.max(0, lineNumber * lineHeight), behavior })
   }
 
   function download(extension, mime) {
@@ -142,6 +169,7 @@ function App() {
                 className="editor"
                 value={text}
                 onChange={onChange}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setFocus(true)}
                 onBlur={() => setFocus(false)}
                 onKeyUp={event => centerActiveLine(event.currentTarget)}
@@ -162,7 +190,7 @@ function App() {
         </footer>
       </section>
 
-      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter feel<select defaultValue="classic"><option value="classic">Classic Courier</option><option value="soft">Soft impression</option><option value="clean">Clean machine</option></select></label><label className="toggle-row">Carriage movement <input type="checkbox" /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Drafts are automatically saved to this device.</p></div>}
+      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter feel<select defaultValue="classic"><option value="classic">Classic Courier</option><option value="soft">Soft impression</option><option value="clean">Clean machine</option></select></label><label className="toggle-row">Sound effects <input type="checkbox" checked={sound} onChange={event => setSound(event.target.checked)} /><span className="toggle" /></label><label className="volume-control">Mechanical volume <span>{Math.round(volume * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label><label className="toggle-row">Carriage movement <input type="checkbox" /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Drafts are automatically saved to this device. Sound samples are loaded from Mixkit's royalty-free audio library.</p></div>}
     </main>
   )
 }
