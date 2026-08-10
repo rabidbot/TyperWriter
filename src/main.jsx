@@ -11,10 +11,20 @@ const starter = `The morning arrives quietly.\n\nA thin gold light gathers at th
 
 // Recorded typewriter samples: key, return, space bar, and backspace are separate mechanisms.
 const SAMPLES = {
-  key: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-key-1.mp3',
+  key: [
+    'https://www.soundjay.com/communication_c2026/sounds/typewriter-key-1.mp3',
+    'https://www.soundjay.com/communication_c2026/sounds/typewriter-2.mp3',
+  ],
   space: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-space-bar-1.mp3',
   backspace: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-backspace-1.mp3',
   enter: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-return-1.mp3',
+}
+
+const FONTS = {
+  courier: "'Courier Prime', 'Courier New', monospace",
+  elite: "'Special Elite', 'Courier New', monospace",
+  cutive: "'Cutive Mono', 'Courier New', monospace",
+  mono: "'DM Mono', monospace",
 }
 
 function wordCount(text) {
@@ -47,6 +57,7 @@ function App() {
   const [sound, setSound] = useState(() => localStorage.getItem('paperbound-sound') !== 'off')
   const [volume, setVolume] = useState(() => Number(localStorage.getItem('paperbound-volume') || 0.55))
   const [carriage, setCarriage] = useState(false)
+  const [font, setFont] = useState(() => localStorage.getItem('paperbound-font') || 'courier')
   const [showSettings, setShowSettings] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const editorRef = useRef(null)
@@ -75,7 +86,8 @@ function App() {
   useEffect(() => {
     localStorage.setItem('paperbound-sound', sound ? 'on' : 'off')
     localStorage.setItem('paperbound-volume', String(volume))
-  }, [sound, volume])
+    localStorage.setItem('paperbound-font', font)
+  }, [sound, volume, font])
 
   useEffect(() => {
     const editor = editorRef.current
@@ -89,7 +101,10 @@ function App() {
 
   function playSample(type) {
     if (!sound) return
-    const audio = new Audio(SAMPLES[type])
+    const source = Array.isArray(SAMPLES[type])
+      ? SAMPLES[type][Math.floor(Math.random() * SAMPLES[type].length)]
+      : SAMPLES[type]
+    const audio = new Audio(source)
     audio.volume = Math.min(1, volume * (0.82 + Math.random() * 0.18))
     audio.playbackRate = 0.96 + Math.random() * 0.08
     audio.addEventListener('error', () => console.warn(`Could not load ${type} typewriter sample`), { once: true })
@@ -181,6 +196,7 @@ function App() {
               <textarea
                 ref={editorRef}
                 className="editor"
+                style={{ fontFamily: FONTS[font] }}
                 value={text}
                 onChange={onChange}
                 onKeyDown={handleKeyDown}
@@ -205,7 +221,7 @@ function App() {
         </footer>
       </section>
 
-      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter feel<select defaultValue="classic"><option value="classic">Classic Courier</option><option value="soft">Soft impression</option><option value="clean">Clean machine</option></select></label><label className="toggle-row">Sound effects <input type="checkbox" checked={sound} onChange={event => setSound(event.target.checked)} /><span className="toggle" /></label><label className="volume-control">Mechanical volume <span>{Math.round(volume * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label><label className="toggle-row">Carriage movement <input type="checkbox" checked={carriage} onChange={event => setCarriage(event.target.checked)} /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Vertical feed is always centered. Carriage movement tracks the paper horizontally at the type point.</p></div>}
+      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter font<select value={font} onChange={event => setFont(event.target.value)}><option value="courier">Courier Prime</option><option value="elite">Special Elite</option><option value="cutive">Cutive Mono</option><option value="mono">DM Mono</option></select></label><label className="toggle-row">Sound effects <input type="checkbox" checked={sound} onChange={event => setSound(event.target.checked)} /><span className="toggle" /></label><label className="volume-control">Mechanical volume <span>{Math.round(volume * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label><label className="toggle-row">Carriage movement <input type="checkbox" checked={carriage} onChange={event => setCarriage(event.target.checked)} /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Vertical feed is always centered. Carriage movement tracks the paper horizontally at the type point.</p></div>}
     </main>
   )
 }
