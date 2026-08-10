@@ -5,6 +5,7 @@
 body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
 button { border: 0; cursor: pointer; }
+.fatal-error { min-height:100vh; display:grid; place-content:center; justify-items:center; gap:12px; padding:28px; color:#3d3e39; background:#f6f3eb; text-align:center; }.fatal-mark { font:28px Georgia,serif; letter-spacing:-4px; }.fatal-mark span { color:#cf744a; }.fatal-error h1 { margin:10px 0 0; font:700 23px/1.2 'Libre Baskerville',serif; }.fatal-error p { margin:0; color:#88877e; }.fatal-error details { max-width:min(650px,90vw); text-align:left; color:#77766e; font-size:12px; }.fatal-error pre { max-width:100%; overflow:auto; padding:12px; background:#ece8dd; border-radius:5px; white-space:pre-wrap; }.fatal-error button { margin-top:8px; padding:10px 15px; color:#fffaf1; background:#272a27; border-radius:6px; }
 .app { min-height: 100vh; display: flex; background: #e9e7e1; transition: background .3s; }
 .rail { width: 72px; background: #1a1c1b; color: #a8aaa4; display:flex; flex-direction:column; align-items:center; padding: 23px 0 20px; flex-shrink: 0; }
 .brand-mark { font-family: Georgia, serif; font-size: 25px; color:#eee9de; letter-spacing:-4px; margin-left:-4px; }.brand-mark span { color:#cf744a; font-size:18px; }

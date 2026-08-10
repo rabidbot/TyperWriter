@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState } from 'react'
+import { Component, StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   AlignJustify, ChevronDown, Download, FileText, HelpCircle, Moon,
@@ -11,6 +11,23 @@ const starter = `The morning arrives quietly.\n\nA thin gold light gathers at th
 
 function wordCount(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0
+}
+
+class AppErrorBoundary extends Component {
+  state = { error: null }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error, info) {
+    console.error('Paperbound renderer error:', error, info)
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return <section className="fatal-error"><div className="fatal-mark">P<span>·</span></div><h1>Paperbound could not open</h1><p>The writing surface encountered an unexpected error.</p><details><summary>Show technical details</summary><pre>{this.state.error?.stack || String(this.state.error)}</pre></details><button onClick={() => window.location.reload()}>Reload paper</button></section>
+  }
 }
 
 function App() {
@@ -150,4 +167,4 @@ function App() {
   )
 }
 
-createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>)
+createRoot(document.getElementById('root')).render(<StrictMode><AppErrorBoundary><App /></AppErrorBoundary></StrictMode>)

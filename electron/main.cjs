@@ -16,7 +16,22 @@ function createWindow() {
     }
   })
 
-  window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+  const entry = path.join(__dirname, '..', 'dist', 'index.html')
+  window.loadFile(entry)
+  window.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`)
+  })
+  window.webContents.on('did-fail-load', (_event, code, description, validatedURL) => {
+    console.error(`Paperbound failed to load (${code}): ${description} at ${validatedURL}`)
+  })
+  window.webContents.on('render-process-gone', (_event, details) => {
+    console.error('Paperbound renderer exited:', details)
+  })
+  window.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.control && input.shift && input.key.toLowerCase() === 'i') {
+      window.webContents.openDevTools({ mode: 'detach' })
+    }
+  })
   window.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
