@@ -21,5 +21,6 @@ html[data-theme='night'] .app { background:#272a28;color:#c8c5bb; } html[data-th
 
 /* The caret line is padded into the middle of the paper and the document scrolls underneath it. */
 .editor { padding-block: var(--typewriter-padding, 0px); scroll-behavior: smooth; }
+.editor { white-space: pre; overflow-x: auto; }
 .volume-control { display:grid!important; grid-template-columns:1fr auto; gap:8px; align-items:center; }
 .volume-control input[type=range] { grid-column:1/-1; width:100%; accent-color:#be7754; }

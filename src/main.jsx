@@ -1,4 +1,4 @@
-import { Component, StrictMode, useEffect, useRef, useState } from 'react'
+import { Component, StrictMode, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   AlignJustify, ChevronDown, Download, FileText, HelpCircle, Moon,
@@ -9,12 +9,12 @@ import './styles.css'
 
 const starter = `The morning arrives quietly.\n\nA thin gold light gathers at the edge of the curtains, and somewhere beyond the window a bird begins its first small song.\n\nThere is a particular calm in an unwritten page. It asks for nothing but attention. One word, then another. The soft, familiar rhythm of the keys.`
 
-// Mixkit royalty-free samples keep repeated keystrokes organic without a large bundled sound bank.
+// Recorded typewriter samples: key, return, space bar, and backspace are separate mechanisms.
 const SAMPLES = {
-  key: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-  space: 'https://assets.mixkit.co/active_storage/sfx/2583/2583-preview.mp3',
-  backspace: 'https://assets.mixkit.co/active_storage/sfx/2584/2584-preview.mp3',
-  enter: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
+  key: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-key-1.mp3',
+  space: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-space-bar-1.mp3',
+  backspace: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-backspace-1.mp3',
+  enter: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-return-1.mp3',
 }
 
 function wordCount(text) {
@@ -46,10 +46,18 @@ function App() {
   const [dark, setDark] = useState(false)
   const [sound, setSound] = useState(() => localStorage.getItem('paperbound-sound') !== 'off')
   const [volume, setVolume] = useState(() => Number(localStorage.getItem('paperbound-volume') || 0.55))
+  const [carriage, setCarriage] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const editorRef = useRef(null)
   const audioRef = useRef([])
+
+  useLayoutEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+    const frame = requestAnimationFrame(() => centerActiveLine(editor, 'auto'))
+    return () => cancelAnimationFrame(frame)
+  }, [text, carriage])
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'night' : 'day'
@@ -107,11 +115,17 @@ function App() {
 
   function centerActiveLine(target = editorRef.current, behavior = 'smooth') {
     if (!target) return
-    const lineNumber = target.value.slice(0, target.selectionStart).split('\n').length - 1
+    const beforeCaret = target.value.slice(0, target.selectionStart)
+    const lineNumber = beforeCaret.split('\n').length - 1
     const lineHeight = parseFloat(window.getComputedStyle(target).lineHeight) || 32
     const centerPadding = Math.max(0, target.clientHeight / 2 - lineHeight / 2)
     target.style.setProperty('--typewriter-padding', `${centerPadding}px`)
     target.scrollTo({ top: Math.max(0, lineNumber * lineHeight), behavior })
+    if (carriage) {
+      const charWidth = parseFloat(window.getComputedStyle(target).fontSize) * 0.602
+      const column = beforeCaret.slice(beforeCaret.lastIndexOf('\n') + 1).length
+      target.scrollLeft = Math.max(0, column * charWidth - target.clientWidth * 0.58)
+    }
   }
 
   function download(extension, mime) {
@@ -174,6 +188,7 @@ function App() {
                 onBlur={() => setFocus(false)}
                 onKeyUp={event => centerActiveLine(event.currentTarget)}
                 onClick={event => centerActiveLine(event.currentTarget)}
+                wrap={carriage ? 'off' : 'soft'}
                 spellCheck="true"
                 aria-label="Typewriter document"
                 placeholder="Begin your story..."
@@ -190,7 +205,7 @@ function App() {
         </footer>
       </section>
 
-      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter feel<select defaultValue="classic"><option value="classic">Classic Courier</option><option value="soft">Soft impression</option><option value="clean">Clean machine</option></select></label><label className="toggle-row">Sound effects <input type="checkbox" checked={sound} onChange={event => setSound(event.target.checked)} /><span className="toggle" /></label><label className="volume-control">Mechanical volume <span>{Math.round(volume * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label><label className="toggle-row">Carriage movement <input type="checkbox" /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Drafts are automatically saved to this device. Sound samples are loaded from Mixkit's royalty-free audio library.</p></div>}
+      {showSettings && <div className="settings-popover"><div className="popover-heading"><span>Preferences</span><button onClick={() => setShowSettings(false)}><X size={15}/></button></div><label>Typewriter feel<select defaultValue="classic"><option value="classic">Classic Courier</option><option value="soft">Soft impression</option><option value="clean">Clean machine</option></select></label><label className="toggle-row">Sound effects <input type="checkbox" checked={sound} onChange={event => setSound(event.target.checked)} /><span className="toggle" /></label><label className="volume-control">Mechanical volume <span>{Math.round(volume * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={volume} onChange={event => setVolume(Number(event.target.value))} /></label><label className="toggle-row">Carriage movement <input type="checkbox" checked={carriage} onChange={event => setCarriage(event.target.checked)} /><span className="toggle" /></label><label className="toggle-row">Ink variation <input type="checkbox" defaultChecked /><span className="toggle" /></label><p>Vertical feed is always centered. Carriage movement tracks the paper horizontally at the type point.</p></div>}
     </main>
   )
 }
