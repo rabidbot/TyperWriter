@@ -11,13 +11,10 @@ const starter = `The morning arrives quietly.\n\nA thin gold light gathers at th
 
 // Recorded typewriter samples: key, return, space bar, and backspace are separate mechanisms.
 const SAMPLES = {
-  key: [
-    'https://www.soundjay.com/communication_c2026/sounds/typewriter-key-1.mp3',
-    'https://www.soundjay.com/communication_c2026/sounds/typewriter-2.mp3',
-  ],
+  key: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-key-1.mp3',
   space: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-space-bar-1.mp3',
   backspace: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-backspace-1.mp3',
-  enter: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-return-1.mp3',
+  carriageReturn: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-return-1.mp3',
 }
 
 const FONTS = {
@@ -101,14 +98,17 @@ function App() {
 
   function playSample(type) {
     if (!sound) return
-    const source = Array.isArray(SAMPLES[type])
-      ? SAMPLES[type][Math.floor(Math.random() * SAMPLES[type].length)]
-      : SAMPLES[type]
-    const audio = new Audio(source)
-    audio.volume = Math.min(1, volume * (0.82 + Math.random() * 0.18))
-    audio.playbackRate = 0.96 + Math.random() * 0.08
+    const audio = new Audio(SAMPLES[type])
+    const level = { key: 0.44, space: 0.52, backspace: 0.5, carriageReturn: 0.72 }[type] || 0.5
+    audio.volume = Math.min(1, volume * level * (0.88 + Math.random() * 0.12))
+    audio.playbackRate = type === 'key'
+      ? 0.8 + Math.random() * 0.1
+      : 0.9 + Math.random() * 0.08
     audio.addEventListener('error', () => console.warn(`Could not load ${type} typewriter sample`), { once: true })
     audio.play().catch(() => {})
+    if (type === 'key') {
+      window.setTimeout(() => { audio.pause(); audio.currentTime = 0 }, 180)
+    }
     audioRef.current.push(audio)
     audio.addEventListener('ended', () => {
       audioRef.current = audioRef.current.filter(item => item !== audio)
@@ -117,7 +117,7 @@ function App() {
 
   function handleKeyDown(event) {
     if (event.key === 'Backspace') playSample('backspace')
-    else if (event.key === 'Enter') playSample('enter')
+    else if (event.key === 'Enter') playSample('carriageReturn')
     else if (event.key === ' ') playSample('space')
     else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) playSample('key')
   }
@@ -152,8 +152,10 @@ function App() {
   }
 
   function newPage() {
-    if (text.trim() && !window.confirm('Start a new page? Your current draft is saved.')) return
-    setText(''); setTitle('Untitled page'); setSaved(false); editorRef.current?.focus()
+    setText('')
+    setTitle('Untitled page')
+    setSaved(false)
+    window.setTimeout(() => editorRef.current?.focus(), 0)
   }
 
   return (
