@@ -15,6 +15,7 @@ const SAMPLES = {
   space: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-space-bar-1.mp3',
   backspace: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-backspace-1.mp3',
   carriageReturn: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-return-1.mp3',
+  carriageThud: 'https://www.soundjay.com/communication_c2026/sounds/typewriter-forward-1.mp3',
 }
 
 const FONTS = {
@@ -99,15 +100,15 @@ function App() {
   function playSample(type) {
     if (!sound) return
     const audio = new Audio(SAMPLES[type])
-    const level = { key: 0.44, space: 0.52, backspace: 0.5, carriageReturn: 0.72 }[type] || 0.5
+    const level = { key: 0.44, space: 0.52, backspace: 0.5, carriageReturn: 0.78, carriageThud: 0.58 }[type] || 0.5
     audio.volume = Math.min(1, volume * level * (0.88 + Math.random() * 0.12))
     audio.playbackRate = type === 'key'
       ? 0.8 + Math.random() * 0.1
-      : 0.9 + Math.random() * 0.08
+      : type === 'carriageThud' ? 0.72 : 0.84 + Math.random() * 0.08
     audio.addEventListener('error', () => console.warn(`Could not load ${type} typewriter sample`), { once: true })
     audio.play().catch(() => {})
-    if (type === 'key') {
-      window.setTimeout(() => { audio.pause(); audio.currentTime = 0 }, 180)
+    if (type === 'key' || type === 'carriageThud') {
+      window.setTimeout(() => { audio.pause(); audio.currentTime = 0 }, type === 'key' ? 180 : 320)
     }
     audioRef.current.push(audio)
     audio.addEventListener('ended', () => {
@@ -115,11 +116,51 @@ function App() {
     }, { once: true })
   }
 
+  function playCarriageReturn() {
+    playSample('carriageReturn')
+    window.setTimeout(() => playSample('carriageThud'), 65)
+  }
+
+  function printableWidth(target) {
+    const styles = window.getComputedStyle(target)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    context.font = styles.font
+    return Math.max(1, Math.floor(target.clientWidth / context.measureText('M').width) - 1)
+  }
+
+  function insertAutomaticReturn(event) {
+    const target = event.currentTarget
+    if (target.selectionStart !== target.selectionEnd) return false
+    const caret = target.selectionStart
+    const lineStart = target.value.lastIndexOf('\n', caret - 1) + 1
+    const column = caret - lineStart
+    if (column < printableWidth(target)) return false
+
+    event.preventDefault()
+    const nextValue = `${target.value.slice(0, caret)}\n${event.key}${target.value.slice(caret)}`
+    const nextCaret = caret + 2
+    setText(nextValue)
+    setSaved(false)
+    playCarriageReturn()
+    window.setTimeout(() => {
+      target.focus()
+      target.setSelectionRange(nextCaret, nextCaret)
+      centerActiveLine(target, 'auto')
+    }, 0)
+    return true
+  }
+
   function handleKeyDown(event) {
     if (event.key === 'Backspace') playSample('backspace')
-    else if (event.key === 'Enter') playSample('carriageReturn')
-    else if (event.key === ' ') playSample('space')
-    else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) playSample('key')
+    else if (event.key === 'Enter') playCarriageReturn()
+    else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
+      if (insertAutomaticReturn(event)) {
+        window.setTimeout(() => playSample('key'), 90)
+        return
+      }
+      playSample(event.key === ' ' ? 'space' : 'key')
+    }
   }
 
   function onChange(event) {
